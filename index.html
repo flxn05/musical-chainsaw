@@ -1,198 +1,232 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Create Calendar Event</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Event Planner</title>
   <style>
-    :root {
-      --primary: #2C3E50;
-      --secondary: #3498DB;
-      --bg: #F4F6F8;
-      --white: #fff;
-      --radius: 8px;
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-image: linear-gradient(to bottom right, black, #222222);
+      color: #eeeeee;
+      min-height: 100vh;
+      padding-bottom: 25vh;
+    }
+    *:focus {
+      outline: none;
+      filter: brightness(1.15);
+      transition: all .15s ease;
     }
 
+    .event-box {
+      border: 1px solid #28a745;
+      padding: 15px;
+      margin-bottom: 10px;
+      position: relative;
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+      animation: animate 0.15s ease-in-out;
+    }
 
-    * {
-      margin: 0;
-      padding: 0;
+    @keyframes animate {
+      from {
+        transform: scale(0.95);
+        opacity: 0;
+      }
+
+      to {
+        transform: scale(1);
+      }
+    }
+
+    .event-box input,
+    .event-box textarea {
+      display: block;
+      margin: 5px 0;
+      width: 100%;
+      padding: 6px;
       box-sizing: border-box;
     }
 
-
-    body {
-      font-family: 'Inter', sans-serif;
-      background: var(--bg);
-      color: var(--primary);
-      padding: 2rem;
+    .add-btn {
+      position: absolute;
+      top: -10px;
+      right: -10px;
       display: flex;
-      justify-content: center;
       align-items: center;
-      min-height: 100vh;
-    }
-
-
-    .container {
-      background: var(--white);
-      padding: 2rem;
-      border-radius: var(--radius);
-      max-width: 500px;
-      width: 100%;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-      animation: fadeInUp 0.6s ease-out;
-    }
-
-
-    @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-
-    h1 {
-      font-size: 1.8rem;
-      margin-bottom: 1rem;
-      font-weight: 600;
-    }
-
-
-    label {
-      display: block;
-      margin: 0.5rem 0 0.2rem;
-      font-weight: 500;
-    }
-
-
-    input, textarea {
-      width: 100%;
-      padding: 0.7rem;
-      border: 1px solid #ccc;
-      border-radius: var(--radius);
-      margin-bottom: 1rem;
-      font-size: 1rem;
-      transition: border 0.2s;
-    }
-
-
-    input:focus, textarea:focus {
-      outline: none;
-      border-color: var(--secondary);
-    }
-
-
-    button {
-      width: 100%;
-      background: var(--secondary);
-      color: var(--white);
-      padding: 0.75rem;
-      border: none;
-      font-size: 1rem;
-      border-radius: var(--radius);
+      justify-content: center;
       cursor: pointer;
-      transition: background 0.3s ease;
+      font-size: 20px;
+      border: none;
+      background: #28a745;
+      color: white;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
     }
 
-
-    button:hover {
-      background: #2980B9;
+    #generate-btn {
+      position: fixed;
+      bottom: 25px;
+      width: calc(100vw - 80px);
+      margin-left: 10px;
+      padding-inline: none;
+      padding-block: 6px;
+      font-size: 16px;
+      border-radius: 20px;
+      border: 1px solid #28a745;
+      color: #dddddd;
+      background-color: #28a745;
+      z-index: 1;
     }
 
+    input,
+    textarea {
+      border-radius: 5px;
+      border: none;
+      background-color: #555555;
+      color: #dddddd;
+    }
 
-    @media (max-width: 600px) {
-      .container {
-        padding: 1.5rem;
+    ::placeholder {
+      color: #dddddd;
+    }
+
+    nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      backdrop-filter: blur(2px) saturate(150%);
+      height: calc(2 * 6px + 16px + 8px + 10px + 35px);
+    }
+    @media (min-width: 400px) {
+      .event-box {
+        width: 300px;
+        display: inline-block;
+        margin-inline: 12px;
       }
-
-
-      h1 {
-        font-size: 1.5rem;
+      #generate-btn {
+        width: auto;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 10px 25px;
+      }
+      body {
+        padding-bottom: 64px;
       }
     }
   </style>
 </head>
+
 <body>
-  <div class="container">
-    <h1>Create Calendar Event</h1>
-    <form id="eventForm">
-      <label for="title">Event Title</label>
-      <input type="text" id="title" name="title" required />
 
+  <h1>Event Planner</h1>
 
-      <label for="description">Description</label>
-      <textarea id="description" name="description" rows="3"></textarea>
+  <div id="events-container"></div>
 
-
-      <label for="start">Start Date & Time</label>
-      <input type="datetime-local" id="start" name="start" required />
-
-
-      <label for="end">End Date & Time</label>
-      <input type="datetime-local" id="end" name="end" required />
-
-
-      <button type="submit">Download .ICS File</button>
-    </form>
-  </div>
-
-
+  <button id="generate-btn">Get your event file</button>
+  <nav></nav>
   <script>
-    document.getElementById('eventForm').addEventListener('submit', function (e) {
-      e.preventDefault();
+    console.log(' All fields are to be filled. Leaving an input empty will result in a damaged file.');
+    console.log(' Click "+" to add another event. You will download a single file containing everything.');
+    console.log(' After clicking the download button, the file will be saved. Once opened, just click "Add to calendar".');
+    console.log(" That's it!")
+    // Function to create a new event box
+    function createEventBox(prefillData = {}) {
+      const container = document.getElementById('events-container');
 
+      const box = document.createElement('div');
+      box.className = 'event-box';
 
-      const title = document.getElementById('title').value.trim();
-      const description = document.getElementById('description').value.trim();
-      const start = new Date(document.getElementById('start').value);
-      const end = new Date(document.getElementById('end').value);
+      const title = document.createElement('input');
+      title.type = 'text';
+      title.placeholder = 'Event Title';
+      title.value = prefillData.title || '';
 
+      const description = document.createElement('textarea');
+      description.placeholder = 'Event Description';
+      description.value = prefillData.description || '';
 
-      if (end <= start) {
-        alert("End time must be after start time.");
-        return;
+      const start = document.createElement('input');
+      start.type = 'datetime-local';
+      start.value = prefillData.start || '';
+
+      const end = document.createElement('input');
+      end.type = 'datetime-local';
+      end.value = prefillData.end || '';
+
+      const addBtn = document.createElement('button');
+      addBtn.className = 'add-btn';
+      addBtn.textContent = '+';
+      addBtn.onclick = () => {
+        const lastBoxData = {
+          title: title.value,
+          description: description.value,
+          start: start.value,
+          end: end.value
+        };
+        createEventBox(lastBoxData);
       }
 
+      box.appendChild(title);
+      box.appendChild(description);
+      box.appendChild(start);
+      box.appendChild(end);
+      box.appendChild(addBtn);
 
-      function formatDate(date) {
-        return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-      }
+      container.appendChild(box);
+    }
 
+    // Function to generate ICS content
+    function generateICS() {
+      const boxes = document.querySelectorAll('.event-box');
+      let icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+`;
 
-      const icsContent = [
-        "BEGIN:VCALENDAR",
-        "VERSION:2.0",
-        "PRODID:-//YourCompany//Event Creator//EN",
-        "BEGIN:VEVENT",
-        `UID:${Date.now()}@yourdomain.com`,
-        `DTSTAMP:${formatDate(new Date())}`,
-        `DTSTART:${formatDate(start)}`,
-        `DTEND:${formatDate(end)}`,
-        `SUMMARY:${title}`,
-        `DESCRIPTION:${description}`,
-        "END:VEVENT",
-        "END:VCALENDAR"
-      ].join('\r\n');
+      boxes.forEach((box, index) => {
+        const title = box.querySelector('input[type="text"]').value;
+        const description = box.querySelector('textarea').value;
+        const start = box.querySelector('input[type="datetime-local"]').value;
+        const end = box.querySelectorAll('input[type="datetime-local"]')[1].value;
 
+        if (!start || !end) return;
 
-      const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
+        const formatDate = (dateStr) => {
+          return dateStr.replace(/[-:]/g, '').replace('T', 'T') + '00Z';
+        };
 
+        icsContent += `BEGIN:VEVENT
+UID:event-${index}@example.com
+SUMMARY:${title}
+DESCRIPTION:${description}
+DTSTART:${formatDate(start)}
+DTEND:${formatDate(end)}
+END:VEVENT
+`;
+      });
 
+      icsContent += 'END:VCALENDAR';
+
+      const blob = new Blob([icsContent], { type: 'text/calendar' });
       const link = document.createElement('a');
-      link.href = url;
-      link.download = `${title.replace(/\s+/g, '_') || 'event'}.ics`;
-      document.body.appendChild(link);
+      link.href = URL.createObjectURL(blob);
+      link.download = 'events.ics';
       link.click();
-      document.body.removeChild(link);
-    });
-  </script>
-</body>
-</html>
+    }
 
+    // Initialize with one event box
+    createEventBox();
+
+    // Attach generate button
+    document.getElementById('generate-btn').onclick = generateICS;
+  </script>
+
+</body>
+
+</html>
