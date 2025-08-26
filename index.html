@@ -2,10 +2,79 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Event Planner</title>
   <style>
+    .error-btn {
+      background-color: red;
+      color: white;
+    }
+
+
+
+    /* Toggle Switch */
+    .toggle-container {
+      display: flex;
+      align-items: center;
+      margin: 10px 0;
+    }
+
+    .toggle-label {
+      margin-right: 10px;
+      font-weight: bold;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 24px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 24px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+
+    input:checked+.slider {
+      background-color: #4CAF50;
+    }
+
+    input:checked+.slider:before {
+      transform: translateX(26px);
+    }
+
+    .toggle-state-text {
+      margin-left: 10px;
+      font-weight: bold;
+    }
+
     body {
       font-family: Arial, sans-serif;
       padding: 20px;
@@ -14,6 +83,7 @@
       min-height: 100vh;
       padding-bottom: 25vh;
     }
+
     *:focus {
       outline: none;
       filter: brightness(1.15);
@@ -102,18 +172,21 @@
       backdrop-filter: blur(2px) saturate(150%);
       height: calc(2 * 6px + 16px + 8px + 10px + 35px);
     }
+
     @media (min-width: 400px) {
       .event-box {
         width: 300px;
         display: inline-block;
         margin-inline: 12px;
       }
+
       #generate-btn {
         width: auto;
         left: 50%;
         transform: translateX(-50%);
         padding: 10px 25px;
       }
+
       body {
         padding-bottom: 64px;
       }
@@ -129,12 +202,12 @@
 
   <button id="generate-btn">Get your event file</button>
   <nav></nav>
+
   <script>
-    console.log(' All fields are to be filled. Leaving an input empty will result in a damaged file.');
-    console.log(' Click "+" to add another event. You will download a single file containing everything.');
-    console.log(' After clicking the download button, the file will be saved. Once opened, just click "Add to calendar".');
-    console.log(" That's it!")
-    // Function to create a new event box
+    console.log('All fields are to be filled. Leaving an input empty will result in a damaged file.');
+    console.log('Click "+" to add another event. You will download a single file containing everything.');
+    console.log('After clicking the download button, the file will be saved. Once opened, just click "Add to calendar".');
+
     function createEventBox(prefillData = {}) {
       const container = document.getElementById('events-container');
 
@@ -158,6 +231,29 @@
       end.type = 'datetime-local';
       end.value = prefillData.end || '';
 
+      // Toggle for full day
+      const toggleContainer = document.createElement('div');
+      toggleContainer.className = 'toggle-container';
+
+      const toggleLabel = document.createElement('span');
+      toggleLabel.className = 'toggle-label';
+      toggleLabel.textContent = 'Full Day';
+
+      const toggleWrapper = document.createElement('label');
+      toggleWrapper.className = 'switch';
+
+      const toggleInput = document.createElement('input');
+      toggleInput.type = 'checkbox';
+
+      const toggleSlider = document.createElement('span');
+      toggleSlider.className = 'slider';
+
+      toggleWrapper.appendChild(toggleInput);
+      toggleWrapper.appendChild(toggleSlider);
+
+      toggleContainer.appendChild(toggleLabel);
+      toggleContainer.appendChild(toggleWrapper);
+
       const addBtn = document.createElement('button');
       addBtn.className = 'add-btn';
       addBtn.textContent = '+';
@@ -175,14 +271,17 @@
       box.appendChild(description);
       box.appendChild(start);
       box.appendChild(end);
+      box.appendChild(toggleContainer);
       box.appendChild(addBtn);
 
       container.appendChild(box);
     }
 
-    // Function to generate ICS content
     function generateICS() {
       const boxes = document.querySelectorAll('.event-box');
+      const btn = document.getElementById('generate-btn');
+      let allValid = true;
+
       let icsContent = `BEGIN:VCALENDAR
 VERSION:2.0
 CALSCALE:GREGORIAN
@@ -190,43 +289,67 @@ METHOD:PUBLISH
 `;
 
       boxes.forEach((box, index) => {
-        const title = box.querySelector('input[type="text"]').value;
-        const description = box.querySelector('textarea').value;
+        const title = box.querySelector('input[type="text"]').value.trim();
+        const description = box.querySelector('textarea').value.trim();
         const start = box.querySelector('input[type="datetime-local"]').value;
         const end = box.querySelectorAll('input[type="datetime-local"]')[1].value;
+        const isFullDay = box.querySelector('input[type="checkbox"]').checked;
 
-        if (!start || !end) return;
+        if (!title || !description || !start || !end) {
+          allValid = false;
+          return;
+        }
 
-        const formatDate = (dateStr) => {
-          return dateStr.replace(/[-:]/g, '').replace('T', 'T') + '00Z';
+        const formatDate = (dateStr, fullDay = false) => {
+          const date = new Date(dateStr);
+          if (fullDay) {
+            // Format YYYYMMDD
+            return dateStr.split('T')[0].replace(/-/g, '');
+          } else {
+            // Format YYYYMMDDTHHMMSSZ
+            return dateStr.replace(/[-:]/g, '').replace('T', 'T') + '00Z';
+          }
         };
 
         icsContent += `BEGIN:VEVENT
 UID:event-${index}@example.com
 SUMMARY:${title}
 DESCRIPTION:${description}
-DTSTART:${formatDate(start)}
-DTEND:${formatDate(end)}
+DTSTART${isFullDay ? ';VALUE=DATE' : ''}:${formatDate(start, isFullDay)}
+DTEND${isFullDay ? ';VALUE=DATE' : ''}:${formatDate(end, isFullDay)}
 END:VEVENT
 `;
       });
 
       icsContent += 'END:VCALENDAR';
 
+      if (!allValid) {
+        btn.textContent = 'Not filled out yet';
+        btn.classList.add('error-btn');
+        return;
+      } else {
+        btn.textContent = 'Get your event file';
+        btn.classList.remove('error-btn');
+      }
+
+      const now = new Date();
+      const pad = (n) => n.toString().padStart(2, '0');
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      let hour = now.getHours();
+      const ampm = hour >= 12 ? "PM" : "AM";
+      hour = hour % 12 || 12;
+      const timestamp = `${now.getDate()}${months[now.getMonth()]}${now.getFullYear()}at${hour}_${pad(now.getMinutes())}${ampm}`;
+
       const blob = new Blob([icsContent], { type: 'text/calendar' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = 'events.ics';
+      link.download = `${timestamp}_flxn05github_pgs.ics`;
       link.click();
     }
 
-    // Initialize with one event box
     createEventBox();
-
-    // Attach generate button
     document.getElementById('generate-btn').onclick = generateICS;
   </script>
-
 </body>
 
 </html>
