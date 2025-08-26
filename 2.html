@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Event Planner</title>
+  <style>
+    .error-btn {
+      background-color: red;
+      color: white;
+    }
+
+
+
+    /* Toggle Switch */
+    .toggle-container {
+      display: flex;
+      align-items: center;
+      margin: 10px 0;
+    }
+
+    .toggle-label {
+      margin-right: 10px;
+      font-weight: bold;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 24px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 24px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+
+    input:checked+.slider {
+      background-color: #4CAF50;
+    }
+
+    input:checked+.slider:before {
+      transform: translateX(26px);
+    }
+
+    .toggle-state-text {
+      margin-left: 10px;
+      font-weight: bold;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-image: linear-gradient(to bottom right, black, #222222);
+      color: #eeeeee;
+      min-height: 100vh;
+      padding-bottom: 25vh;
+    }
+
+    *:focus {
+      outline: none;
+      filter: brightness(1.15);
+      transition: all .15s ease;
+    }
+
+    .event-box {
+      border: 1px solid #28a745;
+      padding: 15px;
+      margin-bottom: 10px;
+      position: relative;
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+      animation: animate 0.15s ease-in-out;
+    }
+
+    @keyframes animate {
+      from {
+        transform: scale(0.95);
+        opacity: 0;
+      }
+
+      to {
+        transform: scale(1);
+      }
+    }
+
+    .event-box input,
+    .event-box textarea {
+      display: block;
+      margin: 5px 0;
+      width: 100%;
+      padding: 6px;
+      box-sizing: border-box;
+    }
+
+    .add-btn {
+      position: absolute;
+      top: -10px;
+      right: -10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 20px;
+      border: none;
+      background: #28a745;
+      color: white;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+    }
+
+    #generate-btn {
+      position: fixed;
+      bottom: 25px;
+      width: calc(100vw - 80px);
+      margin-left: 10px;
+      padding-inline: none;
+      padding-block: 6px;
+      font-size: 16px;
+      border-radius: 20px;
+      border: 1px solid #28a745;
+      color: #dddddd;
+      background-color: #28a745;
+      z-index: 1;
+    }
+
+    input,
+    textarea {
+      border-radius: 5px;
+      border: none;
+      background-color: #555555;
+      color: #dddddd;
+    }
+
+    ::placeholder {
+      color: #dddddd;
+    }
+
+    nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      backdrop-filter: blur(2px) saturate(150%);
+      height: calc(2 * 6px + 16px + 8px + 10px + 35px);
+    }
+
+    @media (min-width: 400px) {
+      .event-box {
+        width: 300px;
+        display: inline-block;
+        margin-inline: 12px;
+      }
+
+      #generate-btn {
+        width: auto;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 10px 25px;
+      }
+
+      body {
+        padding-bottom: 64px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>Event Planner</h1>
+
+  <div id="events-container"></div>
+
+  <button id="generate-btn">Get your event file</button>
+  <nav></nav>
+
+  <script>
+    console.log('All fields are to be filled. Leaving an input empty will result in a damaged file.');
+    console.log('Click "+" to add another event. You will download a single file containing everything.');
+    console.log('After clicking the download button, the file will be saved. Once opened, just click "Add to calendar".');
+
+    function createEventBox(prefillData = {}) {
+      const container = document.getElementById('events-container');
+
+      const box = document.createElement('div');
+      box.className = 'event-box';
+
+      const title = document.createElement('input');
+      title.type = 'text';
+      title.placeholder = 'Event Title';
+      title.value = prefillData.title || '';
+
+      const description = document.createElement('textarea');
+      description.placeholder = 'Event Description';
+      description.value = prefillData.description || '';
+
+      const start = document.createElement('input');
+      start.type = 'datetime-local';
+      start.value = prefillData.start || '';
+
+      const end = document.createElement('input');
+      end.type = 'datetime-local';
+      end.value = prefillData.end || '';
+
+      // Toggle for full day
+      const toggleContainer = document.createElement('div');
+      toggleContainer.className = 'toggle-container';
+
+      const toggleLabel = document.createElement('span');
+      toggleLabel.className = 'toggle-label';
+      toggleLabel.textContent = 'Full Day';
+
+      const toggleWrapper = document.createElement('label');
+      toggleWrapper.className = 'switch';
+
+      const toggleInput = document.createElement('input');
+      toggleInput.type = 'checkbox';
+
+      const toggleSlider = document.createElement('span');
+      toggleSlider.className = 'slider';
+
+      toggleWrapper.appendChild(toggleInput);
+      toggleWrapper.appendChild(toggleSlider);
+
+      toggleContainer.appendChild(toggleLabel);
+      toggleContainer.appendChild(toggleWrapper);
+
+      const addBtn = document.createElement('button');
+      addBtn.className = 'add-btn';
+      addBtn.textContent = '+';
+      addBtn.onclick = () => {
+        const lastBoxData = {
+          title: title.value,
+          description: description.value,
+          start: start.value,
+          end: end.value
+        };
+        createEventBox(lastBoxData);
+      }
+
+      box.appendChild(title);
+      box.appendChild(description);
+      box.appendChild(start);
+      box.appendChild(end);
+      box.appendChild(toggleContainer);
+      box.appendChild(addBtn);
+
+      container.appendChild(box);
+    }
+
+    function generateICS() {
+      const boxes = document.querySelectorAll('.event-box');
+      const btn = document.getElementById('generate-btn');
+      let allValid = true;
+
+      let icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+`;
+
+      boxes.forEach((box, index) => {
+        const title = box.querySelector('input[type="text"]').value.trim();
+        const description = box.querySelector('textarea').value.trim();
+        const start = box.querySelector('input[type="datetime-local"]').value;
+        const end = box.querySelectorAll('input[type="datetime-local"]')[1].value;
+        const isFullDay = box.querySelector('input[type="checkbox"]').checked;
+
+        if (!title || !description || !start || !end) {
+          allValid = false;
+          return;
+        }
+
+        const formatDate = (dateStr, fullDay = false) => {
+          const date = new Date(dateStr);
+          if (fullDay) {
+            // Format YYYYMMDD
+            return dateStr.split('T')[0].replace(/-/g, '');
+          } else {
+            // Format YYYYMMDDTHHMMSSZ
+            return dateStr.replace(/[-:]/g, '').replace('T', 'T') + '00Z';
+          }
+        };
+
+        icsContent += `BEGIN:VEVENT
+UID:event-${index}@example.com
+SUMMARY:${title}
+DESCRIPTION:${description}
+DTSTART${isFullDay ? ';VALUE=DATE' : ''}:${formatDate(start, isFullDay)}
+DTEND${isFullDay ? ';VALUE=DATE' : ''}:${formatDate(end, isFullDay)}
+END:VEVENT
+`;
+      });
+
+      icsContent += 'END:VCALENDAR';
+
+      if (!allValid) {
+        btn.textContent = 'Not filled out yet';
+        btn.classList.add('error-btn');
+        return;
+      } else {
+        btn.textContent = 'Get your event file';
+        btn.classList.remove('error-btn');
+      }
+
+      const now = new Date();
+      const pad = (n) => n.toString().padStart(2, '0');
+      const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+
+      const blob = new Blob([icsContent], { type: 'text/calendar' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `${timestamp}_event.ics`;
+      link.click();
+    }
+
+    createEventBox();
+    document.getElementById('generate-btn').onclick = generateICS;
+  </script>
+</body>
+
+</html>
