@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Agenda auf den TV casten (Google Cast Web Sender Demo)</title>
+  
+  <!-- Cast Web Sender SDK (mit Framework) -->
+  <script src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
+  
+  <style>
+    :root { --bg:#0f172a; --card:#111827; --muted:#9ca3af; --accent:#22c55e; --white:#fff; }
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Helvetica,Arial,sans-serif;margin:0;background:linear-gradient(160deg,#0f172a,#1f2937);color:var(--white)}
+    header{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:18px 20px;background:#0b1220;position:sticky;top:0;z-index:10}
+    h1{font-size:clamp(18px,2.5vw,28px);margin:0;letter-spacing:.3px}
+    main{max-width:1100px;margin:24px auto;padding:0 20px 40px;}
+    .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:22px}
+    .card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:18px;box-shadow:0 10px 35px rgba(0,0,0,.35);overflow:hidden}
+    .card h2{margin:0;padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.08);font-size:18px}
+    .pad{padding:18px}
+    .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    button{appearance:none;border:none;border-radius:12px;padding:12px 16px;font-weight:600;background:#334155;color:#fff;cursor:pointer;transition:.2s}
+    button:hover{filter:brightness(1.1)}
+    button.primary{background:var(--accent);color:#04210f}
+    button.ghost{background:transparent;border:1px solid rgba(255,255,255,.18)}
+    .hint{color:var(--muted);font-size:13px}
+    .status{margin-top:10px;font-size:13px;color:#cbd5e1}
+    .preview{display:grid;gap:14px}
+    .slide{
+      border-radius:16px;overflow:hidden;background:#0b1220;border:1px solid rgba(255,255,255,.08);
+      display:grid;grid-template-columns:1fr 1.1fr;min-height:320px
+    }
+    .slide .info{padding:18px 18px 22px}
+    .kicker{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#93c5fd;margin-bottom:6px}
+    .title{font-size:clamp(20px,4.2vw,34px);font-weight:800;line-height:1.05;margin:0 0 10px}
+    .subtitle{color:#cbd5e1;margin:0 0 16px}
+    .bullets{margin:0;padding-left:18px;color:#e5e7eb}
+    .hero{position:relative}
+    .hero img{width:100%;height:100%;object-fit:cover;display:block}
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap}
+    .stack{display:grid;gap:14px}
+    .field{display:grid;gap:6px}
+    input[type="text"], textarea{width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:#0b1220;color:#fff;}
+    textarea{min-height:88px}
+    .cast-row{display:flex;gap:12px;align-items:center}
+    google-cast-launcher{--disconnected-color:#94a3b8;--connected-color:#22c55e;--size:40px;height:40px;width:40px}
+    footer{opacity:.7;text-align:center;margin:24px 0 40px}
+    .chip{padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.08);font-size:12px}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Agenda → Fernseher (Google Cast Demo)</h1>
+    <div class="cast-row">
+      <google-cast-launcher title="Mit Fernseher verbinden"></google-cast-launcher>
+      <span class="chip" id="castState">nicht verbunden</span>
+    </div>
+  </header>
+
+  <main>
+    <div class="grid">
+      <!-- Linke Seite: Vorschau / aktuelle Folie -->
+      <section class="card">
+        <h2>Vorschau (wird so auf dem TV angezeigt)</h2>
+        <div class="pad preview">
+          <div class="slide" id="previewSlide">
+            <div class="info">
+              <div class="kicker" id="kicker">Team Meeting · Heute</div>
+              <h3 class="title" id="title">Sprint Review & Agenda</h3>
+              <p class="subtitle" id="subtitle">Klarer Überblick auf dem TV, Presenter-Ansicht hier.</p>
+              <ul class="bullets" id="bullets">
+                <li>1) Highlights & Demos</li>
+                <li>2) KPI Dashboard</li>
+                <li>3) Nächste Schritte</li>
+              </ul>
+            </div>
+            <div class="hero">
+              <img id="heroImg" alt="Hero" src="https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=1200&auto=format&fit=crop"/>
+            </div>
+          </div>
+
+          <div class="controls">
+            <button class="ghost" id="prevBtn">◀ Zurück</button>
+            <button class="primary" id="castBtn">Auf TV übertragen</button>
+            <button class="ghost" id="nextBtn">Weiter ▶</button>
+          </div>
+          <div class="status" id="status">Bereit.</div>
+        </div>
+      </section>
+
+      <!-- Rechte Seite: Inhalte editieren -->
+      <section class="card">
+        <h2>Inhalt bearbeiten (Use-Case: Meeting-Agenda / Digital Signage)</h2>
+        <div class="pad stack">
+          <div class="field">
+            <label>Kürzer Kontext / Kicker</label>
+            <input type="text" id="formKicker" value="Team Meeting · Heute" />
+          </div>
+          <div class="field">
+            <label>Titel</label>
+            <input type="text" id="formTitle" value="Sprint Review & Agenda" />
+          </div>
+          <div class="field">
+            <label>Untertitel</label>
+            <input type="text" id="formSubtitle" value="Klarer Überblick auf dem TV, Presenter-Ansicht hier." />
+          </div>
+          <div class="field">
+            <label>Stichpunkte (je Zeile einer)</label>
+            <textarea id="formBullets">1) Highlights & Demos
+2) KPI Dashboard
+3) Nächste Schritte</textarea>
+          </div>
+          <div class="field">
+            <label>Bild-URL (öffentlich erreichbar, HTTPS)</label>
+            <input type="text" id="formImg" value="https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=1600&auto=format&fit=crop" />
+          </div>
+          <div class="toolbar">
+            <button id="applyBtn">Änderungen übernehmen</button>
+            <button id="sendSlideBtn" class="primary">Diese Folie auf TV laden</button>
+          </div>
+          <p class="hint">Hinweis: Für das Senden wird der <b>Default Media Receiver</b> von Google Cast genutzt. Das zeigt Bilder/Videos in Vollbild auf dem TV. Für komplett eigene HTML-Layouts bräuchtest du eine eigene Receiver-App (separat zu hosten & zu registrieren).</p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    <small>Demo: Einfacher Use-Case für Webseitenbetreiber – <i>Präsentations-/Signage-Folie</i> via Google Cast auf den TV. Funktioniert mit TVs/Boxen, die "Chromecast built‑in" haben oder einem Chromecast‑Dongle.</small>
+  </footer>
+
+<script>
+  // ------------------------------
+  // 1) Beispiel-Daten (3 Folien)
+  // ------------------------------
+  const slides = [
+    {
+      kicker: 'Team Meeting · Heute',
+      title: 'Sprint Review & Agenda',
+      subtitle: 'Klarer Überblick auf dem TV, Presenter-Ansicht hier.',
+      bullets: ['1) Highlights & Demos','2) KPI Dashboard','3) Nächste Schritte'],
+      image: 'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=1600&auto=format&fit=crop',
+    },
+    {
+      kicker: 'Café Riverside',
+      title: 'Tagesmenü',
+      subtitle: 'Mo–Fr · 11:30–14:30',
+      bullets: ['Suppe des Tages · 4,50€','Pasta Primavera · 9,90€','Veggie Bowl · 8,90€'],
+      image: 'https://images.unsplash.com/photo-1543351611-58f69d7098a9?q=80&w=1600&auto=format&fit=crop',
+    },
+    {
+      kicker: 'Heute · 18:00 Uhr',
+      title: 'Yoga · Sunset Flow',
+      subtitle: 'Studio Nord · Level: All',
+      bullets: ['Atem & Stretch','Balance & Core','Cool Down & Tee'],
+      image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=1600&auto=format&fit=crop',
+    },
+  ];
+
+  let index = 0;
+
+  // DOM refs
+  const el = {
+    kicker: document.getElementById('kicker'),
+    title: document.getElementById('title'),
+    subtitle: document.getElementById('subtitle'),
+    bullets: document.getElementById('bullets'),
+    hero: document.getElementById('heroImg'),
+    status: document.getElementById('status'),
+    castState: document.getElementById('castState'),
+    formKicker: document.getElementById('formKicker'),
+    formTitle: document.getElementById('formTitle'),
+    formSubtitle: document.getElementById('formSubtitle'),
+    formBullets: document.getElementById('formBullets'),
+    formImg: document.getElementById('formImg'),
+    applyBtn: document.getElementById('applyBtn'),
+    sendSlideBtn: document.getElementById('sendSlideBtn'),
+    castBtn: document.getElementById('castBtn'),
+    prevBtn: document.getElementById('prevBtn'),
+    nextBtn: document.getElementById('nextBtn'),
+  };
+
+  function renderPreview(s){
+    el.kicker.textContent = s.kicker;
+    el.title.textContent = s.title;
+    el.subtitle.textContent = s.subtitle;
+    el.bullets.innerHTML = '';
+    s.bullets.forEach(b => {
+      const li = document.createElement('li'); li.textContent = b; el.bullets.appendChild(li);
+    });
+    el.hero.src = s.image;
+  }
+
+  function fillFormFromSlide(s){
+    el.formKicker.value = s.kicker;
+    el.formTitle.value = s.title;
+    el.formSubtitle.value = s.subtitle;
+    el.formBullets.value = s.bullets.join('\n');
+    el.formImg.value = s.image;
+  }
+
+  function slideFromForm(){
+    const bullets = el.formBullets.value.split(/\n/).map(x=>x.trim()).filter(Boolean);
+    return {
+      kicker: el.formKicker.value.trim() || '—',
+      title: el.formTitle.value.trim() || '—',
+      subtitle: el.formSubtitle.value.trim() || '',
+      bullets,
+      image: el.formImg.value.trim(),
+    };
+  }
+
+  // Init first slide
+  renderPreview(slides[index]);
+  fillFormFromSlide(slides[index]);
+
+  el.applyBtn.addEventListener('click', () => {
+    slides[index] = slideFromForm();
+    renderPreview(slides[index]);
+  });
+
+  el.prevBtn.addEventListener('click', () => {
+    index = (index - 1 + slides.length) % slides.length;
+    renderPreview(slides[index]);
+    fillFormFromSlide(slides[index]);
+  });
+
+  el.nextBtn.addEventListener('click', () => {
+    index = (index + 1) % slides.length;
+    renderPreview(slides[index]);
+    fillFormFromSlide(slides[index]);
+  });
+
+  // ------------------------------
+  // 2) Cast: Status anzeigen
+  // ------------------------------
+  const context = cast.framework.CastContext.getInstance();
+  context.setOptions({
+    receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID, // wir nutzen den Default Media Receiver
+    autoJoinPolicy: chrome.cast.AutoJoinPolicy.TAB_AND_ORIGIN_SCOPED,
+  });
+
+  function setStatus(msg){ el.status.textContent = msg; }
+
+  context.addEventListener(cast.framework.CastContextEventType.CAST_STATE_CHANGED, (e) => {
+    const state = e.castState; // NO_DEVICES_AVAILABLE, NOT_CONNECTED, CONNECTING, CONNECTED
+    el.castState.textContent = state.replaceAll('_',' ').toLowerCase();
+  });
+
+  // ------------------------------
+  // 3) Cast: Aktuelle Folie (als Bild) auf den TV laden
+  // ------------------------------
+  async function sendSlideToTV(s){
+    const session = context.getCurrentSession();
+    if(!session){ setStatus('Nicht verbunden – bitte zuerst Gerät auswählen (Cast-Button).'); return; }
+
+    // Wir spielen ein Bild ab. Default Receiver zeigt es im Vollbild an.
+    // Hinweis: Die URL muss öffentlich & per HTTPS erreichbar sein.
+    const mediaInfo = new chrome.cast.media.MediaInfo(s.image, 'image/jpeg');
+
+    // Metadaten (werden bei manchen TVs eingeblendet)
+    const metadata = new chrome.cast.media.GenericMediaMetadata();
+    metadata.title = s.title;
+    metadata.subtitle = s.kicker + (s.subtitle ? ' · ' + s.subtitle : '');
+    mediaInfo.metadata = metadata;
+
+    const request = new chrome.cast.media.LoadRequest(mediaInfo);
+    request.autoplay = true;
+
+    try {
+      await session.loadMedia(request);
+      setStatus('Folie an TV gesendet: "' + s.title + '"');
+    } catch(err){
+      console.error(err);
+      setStatus('Fehler beim Senden: ' + (err && err.message ? err.message : err));
+    }
+  }
+
+  // Buttons
+  el.castBtn.addEventListener('click', async () => {
+    // Öffnet die Gerätauswahl (gleich wie Klick auf das Launcher-Icon)
+    try{
+      await context.requestSession();
+    }catch(e){
+      /* User abgebrochen */
+    }
+  });
+
+  el.sendSlideBtn.addEventListener('click', () => {
+    const s = slideFromForm();
+    renderPreview(s);
+    sendSlideToTV(s);
+  });
+
+  // Optional: Keyboard Shortcuts
+  window.addEventListener('keydown', (e)=>{
+    if(e.key==='ArrowRight'){ el.nextBtn.click(); }
+    if(e.key==='ArrowLeft'){ el.prevBtn.click(); }
+  });
+</script>
+</body>
+</html>
