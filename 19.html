@@ -1,0 +1,123 @@
+<!doctype html>
+
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Warte bis 19 Uhr</title>
+  <meta name="description" content="Seite zeigt 'warte bis 19 Uhr' und leitet ab 19:00 Uhr auf das Apple Events Live-Posting weiter." />
+  <style>
+    :root{
+      --bg1: linear-gradient(135deg,#0f172a 0%, #0b1220 100%);
+      --glass: rgba(255,255,255,0.06);
+      --accent: linear-gradient(90deg,#7c3aed,#06b6d4);
+      --card-radius: 16px;
+      --fw-sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    html,body{height:100%;margin:0;font-family:var(--fw-sans);background:var(--bg1);color:#e6eef8}
+    .wrap{
+      min-height:100%;display:flex;align-items:center;justify-content:center;padding:24px;
+    }
+    .card{
+      width:min(760px,92vw);
+      padding:36px;
+      border-radius:var(--card-radius);
+      backdrop-filter: blur(8px) saturate(120%);
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+      box-shadow: 0 8px 30px rgba(2,6,23,0.6), inset 0 1px 0 rgba(255,255,255,0.02);
+      text-align:center;
+    }
+    h1{margin:0 0 12px;font-size:clamp(20px,4vw,36px);letter-spacing:-0.02em}
+    p.lead{margin:0 0 18px;font-size:clamp(14px,2.2vw,18px);opacity:0.88}
+    .countdown{
+      display:flex;gap:14px;justify-content:center;margin-top:14px;flex-wrap:wrap
+    }
+    .timebox{
+      min-width:84px;padding:12px 14px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      box-shadow: 0 6px 18px rgba(2,6,23,0.45);
+      font-weight:700;font-size:18px
+    }
+    .muted{opacity:0.72;font-weight:500}
+    .accent-line{
+      height:6px;border-radius:999px;margin-top:18px;background:var(--accent);
+    }
+    .small{font-size:13px;opacity:0.8;margin-top:12px}
+    .hidden{display:none}
+    footer{margin-top:18px;font-size:12px;opacity:0.65}
+    @media (prefers-reduced-motion: reduce){*{transition:none!important}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <main class="card" role="main" aria-labelledby="headline">
+      <h1 id="headline">Warte bis 19 Uhr</h1>
+      <p class="lead" id="lead">Diese Seite leitet ab 19:00 Uhr automatisch weiter.</p><div id="before" aria-live="polite">
+    <div class="countdown" id="countdown">
+      <div class="timebox"><span id="hours">--</span><div class="muted">Std</div></div>
+      <div class="timebox"><span id="minutes">--</span><div class="muted">Min</div></div>
+      <div class="timebox"><span id="seconds">--</span><div class="muted">Sek</div></div>
+    </div>
+    <div class="accent-line" aria-hidden="true"></div>
+    <div class="small">Die Uhrzeit wird aus deinem Browser berechnet (lokale Zeit).</div>
+  </div>
+
+  <div id="after" class="hidden" aria-live="assertive">
+    <p class="lead">Es ist 19 Uhr oder später — du wirst jetzt weitergeleitet…</p>
+  </div>
+
+  <footer>Erstellt mit einfachem HTML/CSS/JS — öffne diese Datei lokal oder auf einem Webserver.</footer>
+</main>
+
+  </div>  <script>
+    // Ziel-URL
+    const targetUrl = 'https://www.apple.com/apple-events/';
+    // Zielstunde (24h) — ab dieser Stunde wird weitergeleitet
+    const targetHour = 19; // 19:00 lokal
+
+    // Utility: two-digit format
+    const pad = (n) => String(n).padStart(2,'0');
+
+    function timeUntilTarget(now){
+      // build Date for today at targetHour:00:00
+      const target = new Date(now);
+      target.setHours(targetHour,0,0,0);
+      // if now is already past or equal target, return negative/zero ms
+      return target - now;
+    }
+
+    function updateCountdown(){
+      const now = new Date();
+      const ms = timeUntilTarget(now);
+      if(ms <= 0){
+        // show after-state and redirect
+        document.getElementById('before').classList.add('hidden');
+        document.getElementById('after').classList.remove('hidden');
+        // small delay to let screen-readers announce the message, but redirect immediately
+        window.location.replace(targetUrl);
+        return;
+      }
+      const totalSec = Math.floor(ms / 1000);
+      const hours = Math.floor(totalSec / 3600);
+      const minutes = Math.floor((totalSec % 3600) / 60);
+      const seconds = totalSec % 60;
+
+      document.getElementById('hours').textContent = pad(hours);
+      document.getElementById('minutes').textContent = pad(minutes);
+      document.getElementById('seconds').textContent = pad(seconds);
+    }
+
+    // initial check and then interval
+    updateCountdown();
+    // check every 500ms for responsiveness
+    const timer = setInterval(updateCountdown, 500);
+
+    // extra safety: if JS navigation blocked or user wants manual navigation after 19:00
+    // we still provide an onclick handler on the whole card (not visible) to navigate
+    document.querySelector('.card').addEventListener('click', ()=>{
+      const now = new Date();
+      if(now.getHours() >= targetHour){
+        window.location.href = targetUrl;
+      }
+    });
+  </script></body>
+</html>
