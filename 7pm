@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Warte bis 19 Uhr</title>
+  <style>
+    html,body {
+      height:100%;
+      margin:0;
+      background:#ffffff;
+      color:#0b1220;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+    }
+    .center {
+      min-height:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+      text-align:center;
+    }
+    .text {
+      font-weight:700;
+      font-size:clamp(28px,8vw,56px);
+      line-height:1.1;
+    }
+  </style>
+</head>
+<body>
+  <div class="center">
+    <div class="text">warte bis 19 Uhr</div>
+  </div>
+
+  <script>
+    const targetUrl = "https://www.apple.com/apple-events/";
+    const targetHour = 19; // 19:00 lokale Zeit
+
+    function checkRedirect() {
+      const now = new Date();
+      if (now.getHours() >= targetHour) {
+        window.location.replace(targetUrl);
+      }
+    }
+
+    // sofort prüfen
+    checkRedirect();
+    // danach jede Sekunde prüfen
+    setInterval(checkRedirect, 1000);
+  </script>
+</body>
+</html>
